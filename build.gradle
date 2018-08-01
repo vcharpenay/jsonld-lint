@@ -1,0 +1,37 @@
+apply plugin: 'groovy'
+apply plugin: 'application'
+apply plugin: 'eclipse'
+
+mainClassName = 'Lint'
+sourceCompatibility = 1.5
+version = '0.1'
+
+jar {
+    manifest {
+        attributes 'Implementation-Title': 'JSON-LD Lint Tool',
+                   'Implementation-Version': version
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+	compile 'org.codehaus.groovy:groovy:3.0.0-alpha-2'
+	compile 'org.codehaus.groovy:groovy-json:3.0.0-alpha-2'
+	
+	compile 'org.eclipse.rdf4j:rdf4j-runtime:2.2.4'
+}
+
+test {
+    systemProperties 'property': 'value'
+}
+
+uploadArchives {
+    repositories {
+       flatDir {
+           dirs 'repos'
+       }
+    }
+}
