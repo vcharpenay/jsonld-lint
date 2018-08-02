@@ -2,13 +2,12 @@
 
 Command-line utility to detect common mistakes in JSON-LD documents.
 
-Usage: `jsonld-lint <jsonLdDocument> [<vocabularyDocument>]*`.
+Usage: `jsonld-lint JSONLD_DOCUMENT [VOCABULARY_FILE]...`.
 
 The following cases are tested:
 
  - IRI includes potential unresolved namespace
  - Term or namespace potentially not in @context
- - IRI includes potential unresolved namespace
  - Potential IRI defined as literal (use @type:@id or @vocab)
  - Term maps to a predicate with no RDFS/OWL property definition
  - Term maps to a class with no RDFS/OWL class definition

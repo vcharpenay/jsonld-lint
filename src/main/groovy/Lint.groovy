@@ -1,5 +1,7 @@
 import groovy.json.*
 import groovy.transform.Immutable
+
+import org.eclipse.rdf4j.common.lang.FileFormat
 import org.eclipse.rdf4j.model.Model
 import org.eclipse.rdf4j.model.ValueFactory
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory
@@ -62,13 +64,17 @@ class Lint {
 	prefix owl: <http://www.w3.org/2002/07/owl#>
 	select distinct ?term where {
 		graph <${DOCUMENT_GRAPH}> { ?s ?p ?o . }
-		filter not exists { graph <${VOCABULARY_GRAPH}> { ?p a ?prop } }
-	    values ?prop {
-	        rdf:Property
-	        owl:ObjectProperty
-	        owl:DatatypeProperty
-	        owl:AnnotationProperty
-	    }
+		filter not exists {
+			graph <${VOCABULARY_GRAPH}> {
+				?p a ?prop .
+			    values ?prop {
+					rdf:Property
+					owl:ObjectProperty
+					owl:DatatypeProperty
+					owl:AnnotationProperty
+			    }
+			}
+		}
 	    bind (str(?p) as ?term)
 	}
 	"""
@@ -78,11 +84,12 @@ class Lint {
 	prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 	select distinct ?term where {
 		graph <${DOCUMENT_GRAPH}> { ?s a ?t . }
-		filter not exists { graph <${VOCABULARY_GRAPH}> { ?t a ?cl } }
-	    values ?cl {
-	        rdfs:Class
-	        owl:Class
-	    }
+		filter not exists {
+			graph <${VOCABULARY_GRAPH}> {
+				?t a ?cl .
+			    values ?cl { rdfs:Class owl:Class }
+			}
+		}
 	    bind (str(?t) as ?term)
 	}
 	"""
@@ -112,12 +119,19 @@ class Lint {
 		
 		con.add(new FileInputStream(doc), BASE, RDFFormat.JSONLD, docGraph)
 		
-		vocabs.collect({ vocab ->
-			// TODO detect format
-			con.add(new FileInputStream(vocab), BASE, RDFFormat.RDFXML, vocabGraph)
+		def filtered = vocabs.findAll({ vocab ->
+			def opt = Rio.getParserFormatForFileName(vocab)
+			
+			if (!opt.isPresent()) {
+				println('Warning: vocabulary ignored (format not recognized): ' + vocab)
+				return false // filtered out
+			} else {
+				con.add(new FileInputStream(vocab), BASE, opt.get(), vocabGraph)
+				return true // kept in
+			}
 		})
 			
-		rules = vocabs ? defaultRules : defaultRules.findAll({ r -> !r.withVocab })
+		rules = filtered ? defaultRules : defaultRules.findAll({ r -> !r.withVocab })
 	}
 	
 	public validate() {
